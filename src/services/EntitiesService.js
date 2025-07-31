@@ -13,14 +13,9 @@ class EntitiesService {
 
       await this.dbManager.connectBoth();
 
-      // Get recent firms from local database
+      // Get recent firms from local database using SELECT *
       const firmalarQuery = `
-        SELECT FIRMAID, FIRMATIPIID, FIRMAKODU, MUHASEBEKODU, UNVANI, YURTDISI, 
-               VERGIDAIRESI, VERGINUMARASI, URL, EPOSTA, ULKE, BOLGE, TELULKEKODU, 
-               TELEFON, FAXULKEKODU, FAX, MUSTERITEMSILCISI, SFID, FIYATNO, 
-                ODEMEPLANID, NAKLIYESEKLIID, TESLIMSEKLIID, 
-               KKTIPIID, ACIKLAMA
-        FROM FIRMALAR 
+        SELECT * FROM FIRMALAR 
         WHERE EKLEMEZAMANI > DATEADD(day, -${config.sync.daysBack}, GETDATE()) 
            OR DEGISTIRMEZAMANI > DATEADD(day, -${config.sync.daysBack}, GETDATE())
         ORDER BY FIRMAID`;
@@ -28,7 +23,7 @@ class EntitiesService {
       const localResult = await this.dbManager.executeLocalQuery(firmalarQuery);
       const firmalar = localResult.recordset;
 
-      logger.info(`Found ${firmalar.length} firms to sync`);
+      logger.info(`Senkronize edilecek ${firmalar.length} firma bulundu`);
 
       let insertCount = 0;
       let updateCount = 0;
@@ -53,13 +48,18 @@ class EntitiesService {
             updateCount++;
           }
         } catch (error) {
-          logger.error(`Error processing firm ${firma.FIRMAID}:`, error);
+          logger.error(
+            `Firma ${firma.FIRMAID} senkronizasyonunda hata:`,
+            error
+          );
         }
       }
 
       logger.info(
-        `Firmalar sync completed. Inserted: ${insertCount}, Updated: ${updateCount}`
+        `Firmalar senkronizasyonu tamamlandı. Eklenen: ${insertCount}, Güncellenen: ${updateCount}`
       );
+
+      return { inserted: insertCount, updated: updateCount };
     } catch (error) {
       logger.error("Firmalar senkronizasyonu başarısız:", error);
       throw error;
@@ -67,32 +67,25 @@ class EntitiesService {
   }
 
   async insertFirma(firma) {
+    // Dynamic INSERT - all columns from the object
+    const columns = Object.keys(firma);
+    const values = columns.map((col) => `@${col}`).join(", ");
+    const columnsList = columns.join(", ");
+
     const insertQuery = `
-      INSERT INTO FIRMALAR
-      (FIRMAID, FIRMATIPIID, FIRMAKODU, MUHASEBEKODU, UNVANI, YURTDISI, 
-       VERGIDAIRESI, VERGINUMARASI, URL, EPOSTA, ULKE, BOLGE, TELULKEKODU, 
-       TELEFON, FAXULKEKODU, FAX, MUSTERITEMSILCISI, SFID, FIYATNO, 
-       ODEMEPLANID, NAKLIYESEKLIID, TESLIMSEKLIID, ACIKLAMA)
-      VALUES 
-      (@FIRMAID, @FIRMATIPIID, @FIRMAKODU, @MUHASEBEKODU, @UNVANI, @YURTDISI, 
-       @VERGIDAIRESI, @VERGINUMARASI, @URL, @EPOSTA, @ULKE, @BOLGE, @TELULKEKODU, 
-       @TELEFON, @FAXULKEKODU, @FAX, @MUSTERITEMSILCISI, @SFID, @FIYATNO, 
-       @ODEMEPLANID, @NAKLIYESEKLIID, @TESLIMSEKLIID, @ACIKLAMA)`;
+      INSERT INTO FIRMALAR (${columnsList})
+      VALUES (${values})`;
 
     await this.dbManager.executeCloudQuery(insertQuery, firma);
   }
 
   async updateFirma(firma) {
+    // Dynamic UPDATE - all columns except primary key
+    const columns = Object.keys(firma).filter((col) => col !== "FIRMAID");
+    const setClause = columns.map((col) => `${col} = @${col}`).join(", ");
+
     const updateQuery = `
-      UPDATE FIRMALAR SET
-      FIRMATIPIID = @FIRMATIPIID, FIRMAKODU = @FIRMAKODU, MUHASEBEKODU = @MUHASEBEKODU, 
-      UNVANI = @UNVANI, YURTDISI = @YURTDISI, VERGIDAIRESI = @VERGIDAIRESI, 
-      VERGINUMARASI = @VERGINUMARASI, URL = @URL, EPOSTA = @EPOSTA, ULKE = @ULKE, 
-      BOLGE = @BOLGE, TELULKEKODU = @TELULKEKODU, TELEFON = @TELEFON, 
-      FAXULKEKODU = @FAXULKEKODU, FAX = @FAX, MUSTERITEMSILCISI = @MUSTERITEMSILCISI, 
-      SFID = @SFID, FIYATNO = @FIYATNO, ODEMEPLANID = @ODEMEPLANID, 
-      NAKLIYESEKLIID = @NAKLIYESEKLIID, TESLIMSEKLIID = @TESLIMSEKLIID, 
-      ACIKLAMA = @ACIKLAMA
+      UPDATE FIRMALAR SET ${setClause}
       WHERE FIRMAID = @FIRMAID`;
 
     await this.dbManager.executeCloudQuery(updateQuery, firma);

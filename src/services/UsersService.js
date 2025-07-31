@@ -14,10 +14,7 @@ class UsersService {
       await this.dbManager.connectBoth();
 
       const personelQuery = `
-        SELECT PERSONELID, PERSONELKODU, YETKIGRUBU, SICILNO, ADI, SOYADI, 
-               UNVANI, DOGUMTARIHI, EPOSTA, TELULKEKODU, TELEFON, GECERLIMI, 
-               ACIKLAMA
-        FROM PERSONEL 
+        SELECT * FROM PERSONEL 
         WHERE EKLEMEZAMANI > DATEADD(day, -${config.sync.daysBack}, GETDATE()) 
            OR DEGISTIRMEZAMANI > DATEADD(day, -${config.sync.daysBack}, GETDATE())
         ORDER BY PERSONELID`;
@@ -25,7 +22,7 @@ class UsersService {
       const localResult = await this.dbManager.executeLocalQuery(personelQuery);
       const personeller = localResult.recordset;
 
-      logger.info(`Found ${personeller.length} personnel to sync`);
+      logger.info(`Senkronize edilecek ${personeller.length} personel bulundu`);
 
       let insertCount = 0;
       let updateCount = 0;
@@ -48,15 +45,17 @@ class UsersService {
           }
         } catch (error) {
           logger.error(
-            `Error processing personnel ${personel.PERSONELID}:`,
+            `Personel ${personel.PERSONELID} senkronizasyonunda hata:`,
             error
           );
         }
       }
 
       logger.info(
-        `Personel sync completed. Inserted: ${insertCount}, Updated: ${updateCount}`
+        `Personel senkronizasyonu tamamlandı. Eklenen: ${insertCount}, Güncellenen: ${updateCount}`
       );
+
+      return { inserted: insertCount, updated: updateCount };
     } catch (error) {
       logger.error("Personel senkronizasyonu başarısız:", error);
       throw error;
@@ -64,24 +63,25 @@ class UsersService {
   }
 
   async insertPersonel(personel) {
+    // Dynamic INSERT - all columns from the object
+    const columns = Object.keys(personel);
+    const values = columns.map((col) => `@${col}`).join(", ");
+    const columnsList = columns.join(", ");
+
     const insertQuery = `
-      INSERT INTO PERSONEL
-      (PERSONELID, PERSONELKODU, YETKIGRUBU, SICILNO, ADI, SOYADI, 
-       UNVANI, DOGUMTARIHI, EPOSTA, TELULKEKODU, TELEFON, GECERLIMI, ACIKLAMA)
-      VALUES 
-      (@PERSONELID, @PERSONELKODU, @YETKIGRUBU, @SICILNO, @ADI, @SOYADI, 
-       @UNVANI, @DOGUMTARIHI, @EPOSTA, @TELULKEKODU, @TELEFON, @GECERLIMI, @ACIKLAMA)`;
+      INSERT INTO PERSONEL (${columnsList})
+      VALUES (${values})`;
 
     await this.dbManager.executeCloudQuery(insertQuery, personel);
   }
 
   async updatePersonel(personel) {
+    // Dynamic UPDATE - all columns except primary key
+    const columns = Object.keys(personel).filter((col) => col !== "PERSONELID");
+    const setClause = columns.map((col) => `${col} = @${col}`).join(", ");
+
     const updateQuery = `
-      UPDATE PERSONEL SET
-      PERSONELKODU = @PERSONELKODU, YETKIGRUBU = @YETKIGRUBU, SICILNO = @SICILNO, 
-      ADI = @ADI, SOYADI = @SOYADI, UNVANI = @UNVANI, DOGUMTARIHI = @DOGUMTARIHI, 
-      EPOSTA = @EPOSTA, TELULKEKODU = @TELULKEKODU, TELEFON = @TELEFON, 
-      GECERLIMI = @GECERLIMI, ACIKLAMA = @ACIKLAMA
+      UPDATE PERSONEL SET ${setClause}
       WHERE PERSONELID = @PERSONELID`;
 
     await this.dbManager.executeCloudQuery(updateQuery, personel);

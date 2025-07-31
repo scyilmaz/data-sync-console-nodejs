@@ -14,9 +14,7 @@ class StockService {
       await this.dbManager.connectBoth();
 
       const stokKategoriQuery = `
-        SELECT STOKKATEGORIID, STOKKATEGORIKODU, STOKKATEGORIAD, 
-               USTSTOKKATEGORIID, GECERLIMI, ACIKLAMA
-        FROM STOKKATEGORI 
+        SELECT * FROM STOKKATEGORI 
         WHERE EKLEMEZAMANI > DATEADD(day, -${config.sync.daysBack}, GETDATE()) 
            OR DEGISTIRMEZAMANI > DATEADD(day, -${config.sync.daysBack}, GETDATE())
         ORDER BY STOKKATEGORIID`;
@@ -26,7 +24,9 @@ class StockService {
       );
       const stokKategoriler = localResult.recordset;
 
-      logger.info(`Found ${stokKategoriler.length} stock categories to sync`);
+      logger.info(
+        `Senkronize edilecek ${stokKategoriler.length} stok kategorisi bulundu`
+      );
 
       let insertCount = 0;
       let updateCount = 0;
@@ -49,15 +49,17 @@ class StockService {
           }
         } catch (error) {
           logger.error(
-            `Error processing stock category ${kategori.STOKKATEGORIID}:`,
+            `Stok kategorisi ${kategori.STOKKATEGORIID} senkronizasyonunda hata:`,
             error
           );
         }
       }
 
       logger.info(
-        `StokKategori sync completed. Inserted: ${insertCount}, Updated: ${updateCount}`
+        `Stok Kategorisi senkronizasyonu tamamlandı. Eklenen: ${insertCount}, Güncellenen: ${updateCount}`
       );
+
+      return { inserted: insertCount, updated: updateCount };
     } catch (error) {
       logger.error("Stok Kategorisi senkronizasyonu başarısız:", error);
       throw error;
@@ -69,8 +71,7 @@ class StockService {
       logger.info("Stok Kalitesi senkronizasyonu başlatılıyor...");
 
       const stokKaliteQuery = `
-        SELECT STOKKALITEID, STOKKOD, STOKKALITEAD, GECERLIMI, ACIKLAMA
-        FROM STOKKALITE 
+        SELECT * FROM STOKKALITE 
         WHERE EKLEMEZAMANI > DATEADD(day, -${config.sync.daysBack}, GETDATE()) 
            OR DEGISTIRMEZAMANI > DATEADD(day, -${config.sync.daysBack}, GETDATE())
         ORDER BY STOKKALITEID`;
@@ -80,7 +81,9 @@ class StockService {
       );
       const stokKaliteler = localResult.recordset;
 
-      logger.info(`Found ${stokKaliteler.length} stock qualities to sync`);
+      logger.info(
+        `Senkronize edilecek ${stokKaliteler.length} stok kalitesi bulundu`
+      );
 
       let insertCount = 0;
       let updateCount = 0;
@@ -103,15 +106,17 @@ class StockService {
           }
         } catch (error) {
           logger.error(
-            `Error processing stock quality ${kalite.STOKKALITEID}:`,
+            `Stok kalitesi ${kalite.STOKKALITEID} senkronizasyonunda hata:`,
             error
           );
         }
       }
 
       logger.info(
-        `StokKalite sync completed. Inserted: ${insertCount}, Updated: ${updateCount}`
+        `Stok Kalitesi senkronizasyonu tamamlandı. Eklenen: ${insertCount}, Güncellenen: ${updateCount}`
       );
+
+      return { inserted: insertCount, updated: updateCount };
     } catch (error) {
       logger.error("Stok Kalitesi senkronizasyonu başarısız:", error);
       throw error;
@@ -123,9 +128,7 @@ class StockService {
       logger.info("Stok Kartı senkronizasyonu başlatılıyor...");
 
       const stokKartiQuery = `
-        SELECT STOKID, STOKKODU, STOKAD, STOKKATEGORIID, STOKKALITEID, 
-               BIRIMID, ANABILIMID, VERGIORANID, GECERLIMI, ACIKLAMA
-        FROM STOKKARTI 
+        SELECT * FROM STOKKARTI 
         WHERE EKLEMEZAMANI > DATEADD(day, -${config.sync.daysBack}, GETDATE()) 
            OR DEGISTIRMEZAMANI > DATEADD(day, -${config.sync.daysBack}, GETDATE())
         ORDER BY STOKID`;
@@ -135,7 +138,9 @@ class StockService {
       );
       const stokKartlari = localResult.recordset;
 
-      logger.info(`Found ${stokKartlari.length} stock cards to sync`);
+      logger.info(
+        `Senkronize edilecek ${stokKartlari.length} stok kartı bulundu`
+      );
 
       let insertCount = 0;
       let updateCount = 0;
@@ -157,77 +162,91 @@ class StockService {
             updateCount++;
           }
         } catch (error) {
-          logger.error(`Error processing stock card ${stok.STOKID}:`, error);
+          logger.error(
+            `Stok kartı ${stok.STOKID} senkronizasyonunda hata:`,
+            error
+          );
         }
       }
 
       logger.info(
-        `StokKarti sync completed. Inserted: ${insertCount}, Updated: ${updateCount}`
+        `Stok Kartı senkronizasyonu tamamlandı. Eklenen: ${insertCount}, Güncellenen: ${updateCount}`
       );
+
+      return { inserted: insertCount, updated: updateCount };
     } catch (error) {
       logger.error("Stok Kartı senkronizasyonu başarısız:", error);
       throw error;
     }
   }
 
+  // Dynamic INSERT methods
   async insertStokKategori(kategori) {
+    const columns = Object.keys(kategori);
+    const values = columns.map((col) => `@${col}`).join(", ");
+    const columnsList = columns.join(", ");
+
     const insertQuery = `
-      INSERT INTO STOKKATEGORI
-      (STOKKATEGORIID, STOKKATEGORIKODU, STOKKATEGORIAD, USTSTOKKATEGORIID, GECERLIMI, ACIKLAMA)
-      VALUES 
-      (@STOKKATEGORIID, @STOKKATEGORIKODU, @STOKKATEGORIAD, @USTSTOKKATEGORIID, @GECERLIMI, @ACIKLAMA)`;
+      INSERT INTO STOKKATEGORI (${columnsList})
+      VALUES (${values})`;
 
     await this.dbManager.executeCloudQuery(insertQuery, kategori);
   }
 
   async updateStokKategori(kategori) {
+    const columns = Object.keys(kategori).filter(
+      (col) => col !== "STOKKATEGORIID"
+    );
+    const setClause = columns.map((col) => `${col} = @${col}`).join(", ");
+
     const updateQuery = `
-      UPDATE STOKKATEGORI SET
-      STOKKATEGORIKODU = @STOKKATEGORIKODU, STOKKATEGORIAD = @STOKKATEGORIAD,
-      USTSTOKKATEGORIID = @USTSTOKKATEGORIID, GECERLIMI = @GECERLIMI, ACIKLAMA = @ACIKLAMA
+      UPDATE STOKKATEGORI SET ${setClause}
       WHERE STOKKATEGORIID = @STOKKATEGORIID`;
 
     await this.dbManager.executeCloudQuery(updateQuery, kategori);
   }
 
   async insertStokKalite(kalite) {
+    const columns = Object.keys(kalite);
+    const values = columns.map((col) => `@${col}`).join(", ");
+    const columnsList = columns.join(", ");
+
     const insertQuery = `
-      INSERT INTO STOKKALITE
-      (STOKKALITEID, STOKKOD, STOKKALITEAD, GECERLIMI, ACIKLAMA)
-      VALUES 
-      (@STOKKALITEID, @STOKKOD, @STOKKALITEAD, @GECERLIMI, @ACIKLAMA)`;
+      INSERT INTO STOKKALITE (${columnsList})
+      VALUES (${values})`;
 
     await this.dbManager.executeCloudQuery(insertQuery, kalite);
   }
 
   async updateStokKalite(kalite) {
+    const columns = Object.keys(kalite).filter((col) => col !== "STOKKALITEID");
+    const setClause = columns.map((col) => `${col} = @${col}`).join(", ");
+
     const updateQuery = `
-      UPDATE STOKKALITE SET
-      STOKKOD = @STOKKOD, STOKKALITEAD = @STOKKALITEAD, 
-      GECERLIMI = @GECERLIMI, ACIKLAMA = @ACIKLAMA
+      UPDATE STOKKALITE SET ${setClause}
       WHERE STOKKALITEID = @STOKKALITEID`;
 
     await this.dbManager.executeCloudQuery(updateQuery, kalite);
   }
 
   async insertStokKarti(stok) {
+    const columns = Object.keys(stok);
+    const values = columns.map((col) => `@${col}`).join(", ");
+    const columnsList = columns.join(", ");
+
     const insertQuery = `
-      INSERT INTO STOKKARTI
-      (STOKID, STOKKODU, STOKAD, STOKKATEGORIID, STOKKALITEID, 
-       BIRIMID, ANABILIMID, VERGIORANID, GECERLIMI, ACIKLAMA)
-      VALUES 
-      (@STOKID, @STOKKODU, @STOKAD, @STOKKATEGORIID, @STOKKALITEID, 
-       @BIRIMID, @ANABILIMID, @VERGIORANID, @GECERLIMI, @ACIKLAMA)`;
+      INSERT INTO STOKKARTI (${columnsList})
+      VALUES (${values})`;
 
     await this.dbManager.executeCloudQuery(insertQuery, stok);
   }
 
   async updateStokKarti(stok) {
+    const columns = Object.keys(stok).filter((col) => col !== "STOKID");
+    const setClause = columns.map((col) => `${col} = @${col}`).join(", ");
+
     const updateQuery = `
-      UPDATE STOKKARTI SET
-      STOKKODU = @STOKKODU, STOKAD = @STOKAD, STOKKATEGORIID = @STOKKATEGORIID,
-      STOKKALITEID = @STOKKALITEID, BIRIMID = @BIRIMID, ANABILIMID = @ANABILIMID,
-      VERGIORANID = @VERGIORANID, GECERLIMI = @GECERLIMI, ACIKLAMA = @ACIKLAMA
+      UPDATE STOKKARTI SET ${setClause}
       WHERE STOKID = @STOKID`;
 
     await this.dbManager.executeCloudQuery(updateQuery, stok);
