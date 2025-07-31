@@ -1,0 +1,64 @@
+version: "3.8"
+
+services:
+  data-sync:
+    build: .
+    environment:
+      - NODE_ENV=production
+    env_file:
+      - .env
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - data-sync-network
+
+  # Scheduler service - Her 5 dakikada sync'i tetikler
+  scheduler:
+    image: alpine:latest
+    command: >
+      sh -c "
+        apk add --no-cache curl &&
+        echo 'Scheduler started. Will run data-sync every 5 minutes...' &&
+        while true; do
+          echo 'Running data sync at: $(date)' &&
+          cd /app && node src/app.js &&
+          echo 'Data sync completed. Waiting 5 minutes...' &&
+          sleep 300
+        done
+      "
+    volumes:
+      - .:/app
+      - ./logs:/app/logs
+    working_dir: /app
+    environment:
+      - NODE_ENV=production
+    env_file:
+      - .env
+    depends_on:
+      - data-sync
+    restart: unless-stopped
+    networks:
+      - data-sync-network
+
+  # Optional: Web dashboard for monitoring
+  # dashboard:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.dashboard
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - NODE_ENV=production
+  #   volumes:
+  #     - ./logs:/app/logs
+  #   networks:
+  #     - data-sync-network
+
+networks:
+  data-sync-network:
+    driver: bridge
+
+volumes:
+  logs:
+    driver: local

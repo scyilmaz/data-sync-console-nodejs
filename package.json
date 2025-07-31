@@ -1,0 +1,38 @@
+{
+  "name": "data-sync-console-nodejs",
+  "version": "1.0.0",
+  "description": "Data Sync Console Node.js data synchronization application",
+  "main": "src/app.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
+    "test": "jest",
+    "test:db": "NODE_ENV=test node src/app.js test",
+    "test:sync": "NODE_ENV=test node src/app.js",
+    "build": "echo 'No build required for Node.js'"
+  },
+  "keywords": [
+    "data-sync",
+    "console",
+    "data-sync",
+    "nodejs",
+    "sql-server"
+  ],
+  "author": "Data Sync Console Team",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "mssql": "^10.0.2",
+    "nodemailer": "^7.0.5",
+    "winston": "^3.13.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "nodemon": "^3.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}

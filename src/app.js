@@ -1,0 +1,113 @@
+import DataSyncService from "./services/DataSyncService.js";
+import logger from "./utils/logger.js";
+
+class App {
+  constructor() {
+    this.syncService = new DataSyncService();
+  }
+
+  async run() {
+    try {
+      logger.info("===============================================");
+      logger.info("Data Sync Console Node.js Application Started");
+      logger.info("===============================================");
+
+      // Parse command line arguments
+      const args = process.argv.slice(2);
+      const command = args[0] || "sync";
+
+      switch (command) {
+        case "sync":
+          await this.executeSync();
+          break;
+        case "test":
+          await this.testConnections();
+          break;
+        case "help":
+          this.showHelp();
+          break;
+        default:
+          logger.warn(`Unknown command: ${command}`);
+          this.showHelp();
+          break;
+      }
+    } catch (error) {
+      logger.error("Application failed:", error);
+      process.exit(1);
+    }
+  }
+
+  async executeSync() {
+    try {
+      await this.syncService.executeSync();
+      logger.info("Synchronization process completed successfully");
+      process.exit(0);
+    } catch (error) {
+      logger.error("Synchronization process failed:", error);
+      process.exit(1);
+    }
+  }
+
+  async testConnections() {
+    try {
+      await this.syncService.testConnections();
+      logger.info("Database connection tests completed successfully");
+      process.exit(0);
+    } catch (error) {
+      logger.error("Database connection tests failed:", error);
+      process.exit(1);
+    }
+  }
+
+  showHelp() {
+    console.log(`
+Data Sync Console Node.js Application
+
+Usage: npm start [command]
+
+Commands:
+  sync    - Execute data synchronization (default)
+  test    - Test database connections
+  help    - Show this help message
+
+Examples:
+  npm start          # Run synchronization
+  npm start sync     # Run synchronization
+  npm start test     # Test database connections
+  npm start help     # Show help
+
+Environment Variables:
+  Create a .env file with the following variables:
+  - DB_LOCAL_SERVER, DB_LOCAL_DATABASE, DB_LOCAL_USER, DB_LOCAL_PASSWORD
+  - DB_CLOUD_SERVER, DB_CLOUD_DATABASE, DB_CLOUD_USER, DB_CLOUD_PASSWORD
+  - LOG_LEVEL, SYNC_DAYS_BACK
+    `);
+  }
+
+  // Handle graceful shutdown
+  setupGracefulShutdown() {
+    const signals = ["SIGTERM", "SIGINT"];
+
+    signals.forEach((signal) => {
+      process.on(signal, async () => {
+        logger.info(`Received ${signal}, shutting down gracefully...`);
+
+        try {
+          await this.syncService.dbManager.close();
+        } catch (error) {
+          logger.error("Error during shutdown:", error);
+        }
+
+        process.exit(0);
+      });
+    });
+  }
+}
+
+// Create and run the application
+const app = new App();
+app.setupGracefulShutdown();
+app.run().catch((error) => {
+  logger.error("Unhandled application error:", error);
+  process.exit(1);
+});
