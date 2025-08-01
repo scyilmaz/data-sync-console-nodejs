@@ -20,6 +20,12 @@ class App {
         case "sync":
           await this.executeSync();
           break;
+        case "sync-stoklar":
+          await this.executeSyncStoklar();
+          break;
+        case "sync-without-stoklar":
+          await this.executeSyncWithoutStoklar();
+          break;
         case "test":
           await this.testConnections();
           break;
@@ -48,6 +54,32 @@ class App {
     }
   }
 
+  async executeSyncStoklar() {
+    try {
+      logger.info("Sadece STOKLAR senkronizasyonu başlatılıyor...");
+      await this.syncService.executeSyncStoklar();
+      logger.info("STOKLAR synchronization process completed successfully");
+      process.exit(0);
+    } catch (error) {
+      logger.error("STOKLAR synchronization process failed:", error);
+      process.exit(1);
+    }
+  }
+
+  async executeSyncWithoutStoklar() {
+    try {
+      logger.info("STOKLAR hariç tüm tablolar senkronize ediliyor...");
+      await this.syncService.executeSyncWithoutStoklar();
+      logger.info(
+        "Synchronization process (without STOKLAR) completed successfully"
+      );
+      process.exit(0);
+    } catch (error) {
+      logger.error("Synchronization process (without STOKLAR) failed:", error);
+      process.exit(1);
+    }
+  }
+
   async testConnections() {
     try {
       await this.syncService.testConnections();
@@ -66,15 +98,19 @@ Data Sync Console Node.js Application
 Usage: npm start [command]
 
 Commands:
-  sync    - Execute data synchronization (default)
-  test    - Test database connections
-  help    - Show this help message
+  sync                 - Execute full data synchronization (default)
+  sync-stoklar         - Execute only STOKLAR synchronization
+  sync-without-stoklar - Execute all synchronization except STOKLAR
+  test                 - Test database connections
+  help                 - Show this help message
 
 Examples:
-  npm start          # Run synchronization
-  npm start sync     # Run synchronization
-  npm start test     # Test database connections
-  npm start help     # Show help
+  npm start                     # Run full synchronization
+  npm start sync               # Run full synchronization
+  npm start sync-stoklar       # Run only STOKLAR sync
+  npm start sync-without-stoklar # Run all except STOKLAR
+  npm start test               # Test database connections
+  npm start help               # Show help
 
 Environment Variables:
   Create a .env file with the following variables:

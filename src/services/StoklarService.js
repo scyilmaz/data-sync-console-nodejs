@@ -9,20 +9,24 @@ class StoklarService {
 
   async syncStoklar() {
     try {
-      logger.info("Starting Stoklar synchronization...");
+      logger.info("Stoklar senkronizasyonu başlatılıyor...");
 
       await this.dbManager.connectBoth();
 
+      // C# kodundaki mantığı takip ediyoruz:
+      // Sadece belirli ambarlar ve stok bakiyesi pozitif olanlar
       const stoklarQuery = `
-        SELECT * FROM STOKLAR 
-        WHERE EKLEMEZAMANI > DATEADD(day, -${config.sync.daysBack}, GETDATE()) 
-           OR DEGISTIRMEZAMANI > DATEADD(day, -${config.sync.daysBack}, GETDATE())
-        ORDER BY STOKID`;
+        SELECT * FROM STOKLAR STK
+        WHERE AMBARID IN (45,46)
+          AND ISNULL(GIREN,0)-ISNULL(CIKAN,0)>0
+        ORDER BY STOKLARID`;
 
       const localResult = await this.dbManager.executeLocalQuery(stoklarQuery);
       const stoklarKayitlari = localResult.recordset;
 
-      logger.info(`Found ${stoklarKayitlari.length} stock records to sync`);
+      logger.info(
+        `Senkronize edilecek ${stoklarKayitlari.length} stok kaydı bulundu`
+      );
 
       let insertCount = 0;
       let updateCount = 0;
@@ -32,8 +36,8 @@ class StoklarService {
           const exists = await this.dbManager.checkRecordExists(
             this.dbManager.getCloudPool(),
             "STOKLAR",
-            "STOKID = @STOKID",
-            { STOKID: stok.STOKID }
+            "STOKLARID = @STOKLARID",
+            { STOKLARID: stok.STOKLARID }
           );
 
           if (!exists) {
@@ -44,22 +48,26 @@ class StoklarService {
             updateCount++;
           }
         } catch (error) {
-          logger.error(`Error syncing stock record ${stok.STOKID}:`, error);
+          logger.error(
+            `Stok kaydı ${stok.STOKLARID} senkronizasyonunda hata:`,
+            error
+          );
         }
       }
 
       logger.info(
-        `Stoklar sync completed. Inserted: ${insertCount}, Updated: ${updateCount}`
+        `Stoklar senkronizasyonu tamamlandı. Eklenen: ${insertCount}, Güncellenen: ${updateCount}`
       );
 
       return { inserted: insertCount, updated: updateCount };
     } catch (error) {
-      logger.error("Stoklar synchronization failed:", error);
+      logger.error("Stoklar senkronizasyonu başarısız:", error);
       throw error;
     }
   }
 
   async insertStoklar(stok) {
+    // Dynamic INSERT - all columns from the object
     const columns = Object.keys(stok);
     const values = columns.map((col) => `@${col}`).join(", ");
     const columnsList = columns.join(", ");
@@ -72,12 +80,13 @@ class StoklarService {
   }
 
   async updateStoklar(stok) {
-    const columns = Object.keys(stok).filter((col) => col !== "STOKID");
+    // Dynamic UPDATE - all columns except primary key
+    const columns = Object.keys(stok).filter((col) => col !== "STOKLARID");
     const setClause = columns.map((col) => `${col} = @${col}`).join(", ");
 
     const updateQuery = `
       UPDATE STOKLAR SET ${setClause}
-      WHERE STOKID = @STOKID`;
+      WHERE STOKLARID = @STOKLARID`;
 
     await this.dbManager.executeCloudQuery(updateQuery, stok);
   }
