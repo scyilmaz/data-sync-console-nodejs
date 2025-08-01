@@ -91,8 +91,14 @@ EMAIL_ERROR_RECIPIENTS=admin@company.com
 # Bağlantı testi
 npm start test
 
-# Tek seferlik senkronizasyon
+# Tam senkronizasyon (tüm tablolar)
 npm start
+
+# Sadece STOKLAR tablosu senkronizasyonu
+npm start sync-stoklar
+
+# STOKLAR hariç diğer tablolar senkronizasyonu
+npm start sync-without-stoklar
 
 # Development modu
 npm run dev
@@ -102,7 +108,19 @@ npm run dev
 
 ### Windows Task Scheduler
 
-Otomatik kurulum scripti Task Scheduler'ı ayarlar. Her 5 dakikada bir çalışır.
+Performans optimizasyonu için iki ayrı görev oluşturulur:
+
+1. **DataSyncConsole-Main**: Diğer tüm tablolar (5 dakikada bir)
+2. **DataSyncConsole-Stoklar**: STOKLAR tablosu (5 saatte bir)
+
+```powershell
+# Otomatik kurulum
+cd deployment-scripts
+.\windows-setup.ps1
+
+# Task yönetimi
+.\manage-tasks.ps1
+```
 
 ### Linux Cron
 
@@ -110,8 +128,25 @@ Otomatik kurulum scripti Task Scheduler'ı ayarlar. Her 5 dakikada bir çalış�
 # Cron job eklemek için
 crontab -e
 
-# Her 5 dakikada çalıştır
-*/5 * * * * cd /path/to/project && npm start
+# Ana senkronizasyon (STOKLAR hariç) - her 5 dakikada
+*/5 * * * * cd /path/to/project && npm start sync-without-stoklar
+
+# STOKLAR senkronizasyonu - her 5 saatte
+0 */5 * * * cd /path/to/project && npm start sync-stoklar
+```
+
+### Görev Yönetimi
+
+```powershell
+# Windows Task Scheduler yönetimi
+cd deployment-scripts
+.\manage-tasks.ps1
+
+# Mevcut komutlar:
+# - status: Task durumlarını görüntüle
+# - start [task]: Task'ı başlat
+# - stop [task]: Task'ı durdur
+# - logs: Log dosyalarını görüntüle
 ```
 
 ### Docker
