@@ -146,8 +146,7 @@ class DataSyncService {
         `Veri senkronizasyonu başarıyla tamamlandı. Süre: ${duration} saniye`
       );
 
-      // Başarı email'i gönder
-      await this.emailService.sendSuccessReport(report);
+      // Başarı durumunda email gönderilmiyor (sadece loglanıyor)
     } catch (error) {
       logger.error("Veri senkronizasyonu başarısız:", error);
 
@@ -269,8 +268,7 @@ class DataSyncService {
         `STOKLAR senkronizasyonu başarıyla tamamlandı. Süre: ${duration} saniye`
       );
 
-      // Başarı email'i gönder
-      await this.emailService.sendSuccessReport(report);
+      // Başarı durumunda email gönderilmiyor (sadece loglanıyor)
 
       return report;
     } catch (error) {
@@ -389,8 +387,7 @@ class DataSyncService {
         `Veri senkronizasyonu (STOKLAR hariç) başarıyla tamamlandı. Süre: ${duration} saniye`
       );
 
-      // Başarı email'i gönder
-      await this.emailService.sendSuccessReport(report);
+      // Başarı durumunda email gönderilmiyor (sadece loglanıyor)
 
       return report;
     } catch (error) {
