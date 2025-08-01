@@ -13,7 +13,8 @@ Yerel ve bulut veritabanları arasında otomatik veri senkronizasyonu sağlayan 
 
 - ✅ **14 Farklı Tablo Senkronizasyonu**: Firmalar, Personel, Stok verileri ve daha fazlası
 - ✅ **Otomatik Scheduler**: Windows Task Scheduler ve Linux Cron desteği
-- ✅ **Email Bildirimleri**: Başarı/hata durumlarında otomatik bildirim
+- ✅ **Email Bildirimleri**: Sadece hata durumlarında otomatik bildirim (spam önleme)
+- ✅ **Performans Optimizasyonu**: STOKLAR tablosu ayrı servis (5 saat), diğerleri hızlı (5 dakika)
 - ✅ **Güvenli Yapılandırma**: Environment variables ile şifre koruması
 - ✅ **Detaylı Loglama**: Winston ile kapsamlı log sistemi
 - ✅ **Cross-Platform**: Windows, Linux, Docker desteği
@@ -91,13 +92,13 @@ EMAIL_ERROR_RECIPIENTS=admin@company.com
 # Bağlantı testi
 npm start test
 
-# Tam senkronizasyon (tüm tablolar)
+# Tam senkronizasyon (STOKLAR hariç - artık varsayılan)
 npm start
 
 # Sadece STOKLAR tablosu senkronizasyonu
 npm start sync-stoklar
 
-# STOKLAR hariç diğer tablolar senkronizasyonu
+# STOKLAR hariç diğer tablolar senkronizasyonu (sync ile aynı)
 npm start sync-without-stoklar
 
 # Development modu

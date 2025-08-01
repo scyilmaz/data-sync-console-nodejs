@@ -126,10 +126,11 @@ class DataSyncService {
       );
       report.modules["İş Emirleri"] = workOrderResult;
 
-      const stocksResult = await this.executeWithTracking("Stoklar", () =>
-        this.stoklarService.syncStoklar()
+      // STOKLAR tablosu ana senkronizasyona dahil edilmez
+      // Ayrı bir servis olarak 5 saatte bir çalışır
+      logger.info(
+        "⚠️ STOKLAR tablosu ana senkronizasyona dahil edilmez (ayrı servis)"
       );
-      report.modules["Stoklar"] = stocksResult;
 
       // Toplamları hesapla
       Object.values(report.modules).forEach((module) => {

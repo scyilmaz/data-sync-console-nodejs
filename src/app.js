@@ -45,7 +45,10 @@ class App {
 
   async executeSync() {
     try {
-      await this.syncService.executeSync();
+      // Ana sync komutu artık STOKLAR'ı içermez
+      // STOKLAR ayrı bir servis olarak çalışır
+      logger.info("Ana senkronizasyon başlatılıyor (STOKLAR ayrı servis)...");
+      await this.syncService.executeSyncWithoutStoklar();
       logger.info("Synchronization process completed successfully");
       process.exit(0);
     } catch (error) {
@@ -98,19 +101,23 @@ Data Sync Console Node.js Application
 Usage: npm start [command]
 
 Commands:
-  sync                 - Execute full data synchronization (default)
+  sync                 - Execute data synchronization without STOKLAR (default)
   sync-stoklar         - Execute only STOKLAR synchronization
-  sync-without-stoklar - Execute all synchronization except STOKLAR
+  sync-without-stoklar - Execute all synchronization except STOKLAR (same as sync)
   test                 - Test database connections
   help                 - Show this help message
 
 Examples:
-  npm start                     # Run full synchronization
-  npm start sync               # Run full synchronization
+  npm start                     # Run main synchronization (STOKLAR excluded)
+  npm start sync               # Run main synchronization (STOKLAR excluded)
   npm start sync-stoklar       # Run only STOKLAR sync
-  npm start sync-without-stoklar # Run all except STOKLAR
+  npm start sync-without-stoklar # Same as sync (STOKLAR excluded)
   npm start test               # Test database connections
   npm start help               # Show help
+
+Performance Optimization:
+  - Main sync (sync/sync-without-stoklar): Fast tables every 5 minutes
+  - STOKLAR sync (sync-stoklar): Large table every 5 hours separately
 
 Environment Variables:
   Create a .env file with the following variables:
