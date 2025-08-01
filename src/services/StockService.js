@@ -131,7 +131,7 @@ class StockService {
         SELECT * FROM STOKKARTI 
         WHERE EKLEMEZAMANI > DATEADD(day, -${config.sync.daysBack}, GETDATE()) 
            OR DEGISTIRMEZAMANI > DATEADD(day, -${config.sync.daysBack}, GETDATE())
-        ORDER BY STOKID`;
+        ORDER BY STOKKARTIID`;
 
       const localResult = await this.dbManager.executeLocalQuery(
         stokKartiQuery
@@ -150,8 +150,8 @@ class StockService {
           const exists = await this.dbManager.checkRecordExists(
             this.dbManager.getCloudPool(),
             "STOKKARTI",
-            "STOKID = @STOKID",
-            { STOKID: stok.STOKID }
+            "STOKKARTIID = @STOKKARTIID",
+            { STOKKARTIID: stok.STOKKARTIID }
           );
 
           if (!exists) {
@@ -163,7 +163,7 @@ class StockService {
           }
         } catch (error) {
           logger.error(
-            `Stok kartı ${stok.STOKID} senkronizasyonunda hata:`,
+            `Stok kartı ${stok.STOKKARTIID} senkronizasyonunda hata:`,
             error
           );
         }
@@ -242,12 +242,12 @@ class StockService {
   }
 
   async updateStokKarti(stok) {
-    const columns = Object.keys(stok).filter((col) => col !== "STOKID");
+    const columns = Object.keys(stok).filter((col) => col !== "STOKKARTIID");
     const setClause = columns.map((col) => `${col} = @${col}`).join(", ");
 
     const updateQuery = `
       UPDATE STOKKARTI SET ${setClause}
-      WHERE STOKID = @STOKID`;
+      WHERE STOKKARTIID = @STOKKARTIID`;
 
     await this.dbManager.executeCloudQuery(updateQuery, stok);
   }

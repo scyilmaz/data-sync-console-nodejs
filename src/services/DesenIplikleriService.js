@@ -17,7 +17,7 @@ class DesenIplikleriService {
         SELECT * FROM DESENIPLIKLERI 
         WHERE EKLEMEZAMANI > DATEADD(day, -${config.sync.daysBack}, GETDATE()) 
            OR DEGISTIRMEZAMANI > DATEADD(day, -${config.sync.daysBack}, GETDATE())
-        ORDER BY DESENIPLIKID`;
+        ORDER BY DESENIPLIKLERIID`;
 
       const localResult = await this.dbManager.executeLocalQuery(
         desenIplikleriQuery
@@ -36,8 +36,8 @@ class DesenIplikleriService {
           const exists = await this.dbManager.checkRecordExists(
             this.dbManager.getCloudPool(),
             "DESENIPLIKLERI",
-            "DESENIPLIKID = @DESENIPLIKID",
-            { DESENIPLIKID: iplik.DESENIPLIKID }
+            "DESENIPLIKLERIID = @DESENIPLIKLERIID",
+            { DESENIPLIKLERIID: iplik.DESENIPLIKLERIID }
           );
 
           if (!exists) {
@@ -49,7 +49,7 @@ class DesenIplikleriService {
           }
         } catch (error) {
           logger.error(
-            `Desen ipliği ${iplik.DESENIPLIKID} senkronizasyonunda hata:`,
+            `Desen ipliği ${iplik.DESENIPLIKLERIID} senkronizasyonunda hata:`,
             error
           );
         }
@@ -79,12 +79,14 @@ class DesenIplikleriService {
   }
 
   async updateDesenIplikleri(iplik) {
-    const columns = Object.keys(iplik).filter((col) => col !== "DESENIPLIKID");
+    const columns = Object.keys(iplik).filter(
+      (col) => col !== "DESENIPLIKLERIID"
+    );
     const setClause = columns.map((col) => `${col} = @${col}`).join(", ");
 
     const updateQuery = `
       UPDATE DESENIPLIKLERI SET ${setClause}
-      WHERE DESENIPLIKID = @DESENIPLIKID`;
+      WHERE DESENIPLIKLERIID = @DESENIPLIKLERIID`;
 
     await this.dbManager.executeCloudQuery(updateQuery, iplik);
   }

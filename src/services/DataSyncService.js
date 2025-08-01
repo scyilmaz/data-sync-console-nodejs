@@ -248,8 +248,7 @@ class DataSyncService {
 
       // Sadece STOKLAR senkronizasyonu
       logger.info("Stoklar senkronizasyonu başlatılıyor...");
-      const stocksResult = await this.executeWithTracking(
-        "Stoklar",
+      const stocksResult = await this.executeWithTracking("Stoklar", () =>
         this.stoklarService.syncStoklar()
       );
       report.modules["Stoklar"] = stocksResult;
@@ -363,8 +362,7 @@ class DataSyncService {
 
       for (const module of modules) {
         logger.info(`${module.name} senkronizasyonu başlatılıyor...`);
-        const result = await this.executeWithTracking(
-          module.name,
+        const result = await this.executeWithTracking(module.name, () =>
           module.service[module.method]()
         );
         report.modules[module.name] = result;
