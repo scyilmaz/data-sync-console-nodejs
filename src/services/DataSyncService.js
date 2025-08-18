@@ -268,7 +268,16 @@ class DataSyncService {
         `STOKLAR senkronizasyonu başarıyla tamamlandı. Süre: ${duration} saniye`
       );
 
-      // Başarı durumunda email gönderilmiyor (sadece loglanıyor)
+      // Başarı durumunda e-posta bildirimi gönder
+      try {
+        await this.emailService.sendSuccessReport(report);
+        logger.info("STOKLAR başarı raporu e-posta olarak gönderildi.");
+      } catch (emailErr) {
+        logger.error(
+          "STOKLAR başarı raporu e-posta gönderimi başarısız:",
+          emailErr
+        );
+      }
 
       return report;
     } catch (error) {
